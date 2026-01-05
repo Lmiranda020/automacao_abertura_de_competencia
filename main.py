@@ -91,11 +91,15 @@ if __name__ == "__main__":
             print(f"Não foi possível encontrar a opção de abrir nova competência para a unidade: {unidade}.")
             exit(1) # sair  
 
+        time.sleep(3)  # aguardar a nova competência abrir
+
         # selecionar o email
         if not clicar_imagem('data/selecionar_email.png', confidence=0.8, timeout=15, descricao="Selecionar Email"):
             print(f"Não foi possível selecionar o email para a unidade: {unidade}.")
             exit(1) # sair
 
+        time.sleep(3)
+        
         # clicar na opção trocar unidade
         if not clicar_imagem('data/trocar_unidade.png', confidence=0.8, timeout=15, descricao="Trocar Unidade"):
             print(f"Não foi possível clicar em trocar unidade para a unidade: {unidade}.")
