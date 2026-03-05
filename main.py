@@ -2,7 +2,8 @@ import pyautogui
 from dotenv import load_dotenv
 from api.api_competencia import api_competencia
 from modules.clicar_na_imagem import clicar_imagem
-from utils.calcula_competencia import calcular_competencia
+from modules.enviar_email import enviar_email_competencia
+from utils.calcula_competencia import calcular_competencia_anterior
 from utils.unidades import UNIDADES
 import os
 import time
@@ -11,136 +12,149 @@ import pandas as pd
 
 if __name__ == "__main__":
 
-    ano, mes, competencia_formatada = calcular_competencia()
+    ano, mes, competencia_formatada = calcular_competencia_anterior()
     print(f"\n📆 Competência a processar: {competencia_formatada}")
 
     caminho_base_api = api_competencia()
 
-    # ler arquivo da api
+    # Ler arquivo da API
     df_api = pd.read_excel(caminho_base_api)
-    # filtrar na coluna ano apenas as linhas que tem o ano da competencia atual
-    df_api = df_api[df_api['ano'] == ano]
-    df_api = df_api[df_api['mes'] == mes]
 
-    # filtrar apenas os que tem status diferente de aberto, para pegar apenas os casos que precisam abrir a competência, e não os que já estão abertos
-    df_api = df_api[df_api['situacao'] != 'ABERTA']
+    # Filtrar apenas registros da competência atual (ano e mês)
+    print(f"\n🔍 Filtrando competências para o ano: {ano} e mês: {mes}...")
+    df_api = df_api[(df_api['ano'] == ano) & (df_api['mes'] == mes)]
 
-    # agora cria uma lista com as unidades que tem a competencia atual, para comparar com a lista de unidades que queremos abrir a competencia
-    unidades_com_competencia = df_api['nome'].tolist()
+    # Filtrar apenas as que estão com situação ABERTA
+    # (essas são as que NÃO precisam ser processadas)
+    df_ja_abertas = df_api[df_api['situacao'] == 'ABERTA']
+
+    # Montar lista de nomes das unidades que já estão com a competência aberta
+    unidades_ja_abertas = df_ja_abertas['nome'].tolist()
+    print(f"\n⏭️  Unidades com competência {competencia_formatada} já aberta (serão puladas): {len(unidades_ja_abertas)}")
+    if unidades_ja_abertas:
+        for u in unidades_ja_abertas:
+            print(f"   - {u}")
+
+    # Remover da lista do projeto as unidades que já estão abertas
+    unidades_para_processar = [u for u in UNIDADES if u not in unidades_ja_abertas]
+    print(f"\n✅ Unidades a processar: {len(unidades_para_processar)}")
+
+    # Rastrear quais unidades foram abertas com sucesso nessa execução
+    unidades_abertas_agora = []
+
+    if not unidades_para_processar:
+        print("Nenhuma unidade precisa ter a competência aberta.")
+        enviar_email_competencia(competencia_formatada, unidades_abertas_agora, unidades_ja_abertas)
+        exit(0)
 
     # Carregar variáveis do arquivo .env
     load_dotenv()
 
-    # abrir o google chrome
+    # Abrir o Google Chrome
     pyautogui.press('win')
     pyautogui.write('chrome')
     pyautogui.press('enter')
 
-    # aguardar o chrome abrir
+    # Aguardar o Chrome abrir
     time.sleep(5)
 
-    # clicar em qual usuario o chrome deve abrir
+    # Clicar em qual usuário o Chrome deve abrir
     if not clicar_imagem('data/usuario_chrome.png', confidence=0.9, timeout=15, descricao="Usuário do Chrome"):
         print("Não foi possível selecionar o usuário do Chrome.")
-        exit(1) # exit com 1 para indicar erro, e automação parar aqui. Se for 0 continua.
+        exit(1)
 
-    # aguardar o chrome abrir com o usuario selecionado
+    # Aguardar o Chrome abrir com o usuário selecionado
     time.sleep(5)
     
-    # clicar na barra de endereços
+    # Clicar na barra de endereços
     pyautogui.hotkey('ctrl', 'l')
     pyautogui.press('backspace')
     SISTEMA = os.getenv("IP_SISTEMA")
     pyautogui.write(SISTEMA)
     pyautogui.press('enter')
 
-    # aguardar a página carregar
+    # Aguardar a página carregar
     time.sleep(5)
 
-    # digitar o email para login
+    # Digitar o email para login
     EMAIL: str = os.getenv("EMAIL")
     pyautogui.write(EMAIL)
     pyautogui.press('tab')  
 
-    # digitar a senha para login
+    # Digitar a senha para login
     SENHA: str = os.getenv("SENHA")
     pyautogui.write(SENHA)
     pyautogui.press('enter')
 
-    # aguardar a página carregar
+    # Aguardar a página carregar
     time.sleep(5)
 
-    # clicar o campo de busca da unidade
+    # Clicar o campo de busca da unidade
     if not clicar_imagem('data/campo_busca_unidade.png', confidence=0.8, timeout=15, descricao="Campo de Busca da Unidade"):
         print("Não foi possível encontrar o campo de busca da unidade.")
         exit(1)
 
-    # digitar a unidade desejada, para cada unidade da lista de unidades com a competência atual, para abrir a competência
-    for unidade in unidades_com_competencia:
-        pyperclip.copy(unidade)  # copia o texto com acentos
+    # Processar apenas as unidades que ainda precisam ter a competência aberta
+    for unidade in unidades_para_processar:
+        print(f"\n🔄 Processando unidade: {unidade}")
+
+        pyperclip.copy(unidade)
         time.sleep(0.1)
-        pyautogui.hotkey("ctrl", "v")  # cola tudo corretamente
+        pyautogui.hotkey("ctrl", "v")
         time.sleep(0.1)
 
-        time.sleep(2)  # aguardar as sugestões aparecerem
-        pyautogui.press('down')  # selecionar a primeira sugestão
+        time.sleep(2)
+        pyautogui.press('down')
         pyautogui.press('enter')
         pyautogui.press('enter')
 
-        time.sleep(3)  # aguardar a unidade carregar
+        time.sleep(3)
 
-        # caso tenha a tela de recomendações, fechar ela
+        # Caso tenha a tela de recomendações, fechar ela
         clicar_imagem('data/fechar_recomendacoes.png', confidence=0.8, timeout=5, descricao="Fechar Recomendações")
         time.sleep(1)
 
-        # clica na opção buscar
+        # Clicar na opção buscar
         if not clicar_imagem('data/botao_buscar.png', confidence=0.8, timeout=15, descricao="Botão Buscar"):
             print(f"Não foi possível encontrar o botão buscar para a unidade: {unidade}.")
-            exit(1) # sair
+            exit(1)
 
-        # digitar a opção de competência
+        # Digitar a opção de competência
         opcion_competencia = 'Abrir nova competência'
-        pyperclip.copy(opcion_competencia)  # copia o texto com acentos
+        pyperclip.copy(opcion_competencia)
         time.sleep(0.1)
-        pyautogui.hotkey("ctrl", "v")  # cola tudo corretamente
+        pyautogui.hotkey("ctrl", "v")
         time.sleep(0.1)
         pyautogui.press('enter')
 
-        # selecionar a opção de abrir nova competência
+        # Selecionar a opção de abrir nova competência
         if not clicar_imagem('data/abrir_nova_competencia.png', confidence=0.8, timeout=15, descricao="Abrir Nova Competência"):
             print(f"Não foi possível encontrar a opção de abrir nova competência para a unidade: {unidade}.")
-            exit(1) # sair  
+            exit(1)
 
-        time.sleep(3)  # aguardar a nova competência abrir
+        time.sleep(3)
 
-        # selecionar o email
+        # Selecionar o email
         if not clicar_imagem('data/selecionar_email.png', confidence=0.8, timeout=15, descricao="Selecionar Email"):
             print(f"Não foi possível selecionar o email para a unidade: {unidade}.")
-            exit(1) # sair
+            exit(1)
 
         time.sleep(3)
         
-        # clicar na opção trocar unidade
+        # Clicar na opção trocar unidade
         if not clicar_imagem('data/trocar_unidade.png', confidence=0.8, timeout=15, descricao="Trocar Unidade"):
             print(f"Não foi possível clicar em trocar unidade para a unidade: {unidade}.")
-            exit(1) # sair
+            exit(1)
 
-        time.sleep(3)  # aguardar a troca de unidade
+        time.sleep(3)
 
-    # finalizar a automação
-    print("Saindo do sistema...")
-    
+        # Registrar unidade como aberta com sucesso nessa execução
+        unidades_abertas_agora.append(unidade)
+
+    # Finalizar a automação
+    print("\nSaindo do sistema...")
     pyautogui.hotkey('ctrl', 'w')
-
     print("Automação finalizada com sucesso.")
 
-    
-        
-        
-        
-        
-
-        
-
-
-
+    # Enviar e-mail com resumo da execução
+    enviar_email_competencia(competencia_formatada, unidades_abertas_agora, unidades_ja_abertas)
