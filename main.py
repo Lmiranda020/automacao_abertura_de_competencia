@@ -28,6 +28,13 @@ if __name__ == "__main__":
     # (essas são as que NÃO precisam ser processadas)
     df_ja_abertas = df_api[df_api['situacao'] == 'ABERTA']
 
+    # renomear alguma unidades que estão com nome diferente na API, para conseguir comparar com a lista do projeto
+    df_ja_abertas['nome'] = df_ja_abertas['nome'].replace({
+        "Filial 40 - HOSPITAL DIA M´BOI MIRIM I - CEJAM": "Filial 40 - HOSPITAL DIA M BOI MIRIM I - CEJAM",
+        "Filial 40 - CENTRO REF A DOR CRON PQ MARIA HELENA - CEJAM": "Filial 40 - CENTRO REF A DOR CRON PQ MARIA HELENA - CE",
+        "Filial 40 - HOSPITAL DIA M´BOI MIRIM II - CEJAM": "Filial 40 - HOSPITAL DIA M BOI MIRIM II - CEJAM",
+    })
+
     # Montar lista de nomes das unidades que já estão com a competência aberta
     unidades_ja_abertas = df_ja_abertas['nome'].tolist()
     print(f"\n⏭️  Unidades com competência {competencia_formatada} já aberta (serão puladas): {len(unidades_ja_abertas)}")
