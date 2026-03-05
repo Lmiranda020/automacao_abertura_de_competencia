@@ -2,14 +2,31 @@ import pyautogui
 from dotenv import load_dotenv
 from api.api_competencia import api_competencia
 from modules.clicar_na_imagem import clicar_imagem
+from utils.calcula_competencia import calcular_competencia
 from utils.unidades import UNIDADES
 import os
 import time
 import pyperclip
+import pandas as pd
 
 if __name__ == "__main__":
 
-    api_competencia()
+    ano, mes, competencia_formatada = calcular_competencia()
+    print(f"\n📆 Competência a processar: {competencia_formatada}")
+
+    caminho_base_api = api_competencia()
+
+    # ler arquivo da api
+    df_api = pd.read_excel(caminho_base_api)
+    # filtrar na coluna ano apenas as linhas que tem o ano da competencia atual
+    df_api = df_api[df_api['ano'] == ano]
+    df_api = df_api[df_api['mes'] == mes]
+
+    # filtrar apenas os que tem status diferente de aberto, para pegar apenas os casos que precisam abrir a competência, e não os que já estão abertos
+    df_api = df_api[df_api['situacao'] != 'ABERTA']
+
+    # agora cria uma lista com as unidades que tem a competencia atual, para comparar com a lista de unidades que queremos abrir a competencia
+    unidades_com_competencia = df_api['nome'].tolist()
 
     # Carregar variáveis do arquivo .env
     load_dotenv()
@@ -58,8 +75,8 @@ if __name__ == "__main__":
         print("Não foi possível encontrar o campo de busca da unidade.")
         exit(1)
 
-    # digitar a unidade desejada
-    for unidade in UNIDADES:
+    # digitar a unidade desejada, para cada unidade da lista de unidades com a competência atual, para abrir a competência
+    for unidade in unidades_com_competencia:
         pyperclip.copy(unidade)  # copia o texto com acentos
         time.sleep(0.1)
         pyautogui.hotkey("ctrl", "v")  # cola tudo corretamente
