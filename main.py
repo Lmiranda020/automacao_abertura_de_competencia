@@ -1,5 +1,6 @@
 import pyautogui
 from dotenv import load_dotenv
+from api.api_competencia import api_competencia
 from modules.clicar_na_imagem import clicar_imagem
 from utils.unidades import UNIDADES
 import os
@@ -7,6 +8,8 @@ import time
 import pyperclip
 
 if __name__ == "__main__":
+
+    api_competencia()
 
     # Carregar variáveis do arquivo .env
     load_dotenv()
