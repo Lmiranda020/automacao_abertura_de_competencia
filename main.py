@@ -69,6 +69,9 @@ if __name__ == "__main__":
 
     time.sleep(5)
 
+    # expandir a tela do Chrome para o tamanho máximo
+    pyautogui.hotkey('win', 'up')
+
     if not clicar_imagem('data/usuario_chrome.png', confidence=0.9, timeout=15, descricao="Usuário do Chrome"):
         print("Não foi possível selecionar o usuário do Chrome.")
         salvar_log(inicio_execucao, competencia_formatada, unidades_abertas_agora, unidades_ja_abertas, status="Erro")
