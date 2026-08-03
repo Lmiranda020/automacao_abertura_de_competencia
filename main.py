@@ -98,9 +98,11 @@ if __name__ == "__main__":
     time.sleep(5)
 
     if not clicar_imagem('data/campo_busca_unidade.png', confidence=0.8, timeout=15, descricao="Campo de Busca da Unidade"):
-        print("Não foi possível encontrar o campo de busca da unidade.")
-        salvar_log(inicio_execucao, competencia_formatada, unidades_abertas_agora, unidades_ja_abertas, status="Erro")
-        exit(1)
+        print("Não foi possível encontrar o campo de busca1 da unidade.")
+        if not clicar_imagem('data/campo_busca_unidade2.png', confidence=0.8, timeout=15, descricao="Campo de Busca da Unidade"):
+            print("Não foi possível encontrar o campo de busca2 da unidade.")
+            salvar_log(inicio_execucao, competencia_formatada, unidades_abertas_agora, unidades_ja_abertas, status="Erro")
+            exit(1)
 
     for unidade in unidades_para_processar:
         print(f"\n🔄 Processando unidade: {unidade}")
