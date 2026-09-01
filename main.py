@@ -124,6 +124,10 @@ if __name__ == "__main__":
         clicar_imagem('data/fechar_recomendacoes.png', confidence=0.8, timeout=5, descricao="Fechar Recomendações")
         time.sleep(1)
 
+        # fechar infomativo caso tenha
+        clicar_imagem('data/fechar_informativo.png', confidence=0.8, timeout=5, descricao="Fechar Informativo")
+        time.sleep(1)
+
         if not clicar_imagem('data/botao_buscar.png', confidence=0.8, timeout=15, descricao="Botão Buscar"):
             print(f"Não foi possível encontrar o botão buscar para a unidade: {unidade}.")
             salvar_log(inicio_execucao, competencia_formatada, unidades_abertas_agora, unidades_ja_abertas, status="Parcial")
